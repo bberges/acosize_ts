@@ -1,0 +1,166 @@
+---
+title: "KRM - Saithe"
+author: "Gastauer S."
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, warnings=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_knit$set(root.dir = dirname(getwd()))
+d.img = "./data/xrays/20191017_Xray_Saithe01-27/" #xray folder
+d.sh = "./data/xrays/shapes/SaithSounded/" #shapes folder
+d.krm = "./results/KRM"
+sp="Saithe"
+library(KRMr)
+library(imager)
+library(ggplot2)
+library(sf)
+library(tidyr)
+library(tidyverse)
+imfns = list.files(path=d.img,pattern=".jpg", full.names = T)
+shapes=list.files(path=d.sh, full.names = T)
+```
+
+
+## Pollock
+
+```{r settings, warning=FALSE, echo=FALSE}
+
+frequency=(12:300)*1e3 #frequencies Hz
+theta = seq(65,115) #orientations
+
+c.w = 1490 #Ambient water m/s
+rho.w = 1026.8 #density ambient water kg/m3
+
+c.fb=1570 #soundspeed body
+c.b=345 #soundspeed swimbladder
+cs = c(c.fb, c.b)
+
+rho.fb=1070 #density body kg/m3
+rho.b=1.24 #density swimbladder kg/m3
+rhos = c(rho.fb, rho.b)
+
+L = c(43.3, 39.3,41.5,43.4,41.2,42.2,40.2,38.1,42.6,42.2,
+      39,46.1,49.1,43.5,45.8,48.1,42,37.3,37.3,37,47,36.7,
+      27.9,48.7,25.8,47.2,34)/1e2 #Lengths 
+
+plot_res = function(data=krm1, lims=c(-60,-30)){
+  ggplot(data=data, aes(x=frequency/1e3, y=theta, fill=TS))+
+    geom_tile()+
+    scale_fill_gradientn(colors=rev(pals::brewer.spectral(15)), 
+                         limits=lims, oob=scales::squish,
+                         name=expression(TS~"(dB re 1"*m^2*")"))+
+    scale_x_continuous(expand=c(0,0))+
+    scale_y_continuous(expand=c(0,0))+
+    ylab(expression(theta~"(°)"))+
+    xlab("Frequency (kHz)")+
+    theme_classic()+
+    theme(legend.position = "bottom",
+          text=element_text(size=16),
+          legend.key.width = unit(2, 'cm'))
+}
+
+```
+
+```{r KRM, results='asis',echo=FALSE,message=FALSE, warning=FALSE}
+#xray filenumber jumps
+nsh=length(list.files(path=d.sh))
+ij = rep(1,2*nsh)
+ij[2] = ij[2]+1
+ij = cumsum(ij)
+
+i=1
+cat(paste("## XRay ", i, "\n"))
+  
+ni=sprintf("%02d", i)
+imfns = list.files(path=d.img,pattern=".jpg", full.names = T)
+par(mfrow=c(1,2))
+plot(load.image(imfns[ij[2*i-1]]))
+plot(load.image(imfns[ij[2*i]]))
+   cat("\n\n")
+cat(paste("### KRM Shape ", i, "\n"))
+cat("\n\n")
+  
+shp = Imagej2shp(read.csv(paste0(d.sh,sp, ni,".csv")))
+  
+cat("\n\n")
+htmltools::tagList(KRMr::get_shp3d(shp))
+cat("\n\n")
+
+cat(paste("### KRM \n"))
+ofn = paste0(d.krm,"/krm_", sp, "_",ni,".csv") #output filename
+if(file.exists(ofn)==F){
+  #Run KRM
+  krm1 = krm(frequency = frequency,
+             c.w = c.w,
+             rho.w = rho.w,
+             theta = theta,
+             cs =cs,
+             rhos = rhos,
+             shape = shp1,
+             modes = c("fluid","soft"),
+             L = L[i],
+             fb = 1)
+      write.csv(krm1,ofn)
+}else{krm1 = read.csv(ofn)}
+
+p=plot_res(krm1,c(-60,-30))
+cat("\n")
+print(p)
+cat("\n")
+
+
+
+for(i in 2: nsh){
+  cat("\n\n")
+
+  cat(paste("## XRay ", i, "\n"))
+  
+  ni=sprintf("%02d", i)
+  imfns = list.files(path=d.img,pattern=".jpg", full.names = T)
+  par(mfrow=c(1,2))
+  plot(load.image(imfns[ij[2*i-1]]))
+  plot(load.image(imfns[ij[2*i]]))
+   cat("\n\n")
+  cat(paste("### KRM Shape ", i, "\n"))
+  sfn = paste0(d.sh,sp, ni,".csv")
+
+  shp1 = Imagej2shp(read.csv(sfn))
+
+  
+  cat("\n\n")
+  
+  print(htmltools::tagList(KRMr::get_shp3d(shp1)))
+    
+  cat("\n\n")
+
+  
+  cat(paste("### KRM \n"))
+  
+  ofn = paste0(d.krm,"/krm_", sp, "_",ni,".csv") #output filename
+  if(file.exists(ofn)==F){
+    #Run KRM
+    krm1 = krm(frequency = frequency,
+               c.w = c.w,
+               rho.w = rho.w,
+               theta = theta,
+               cs =cs,
+               rhos = rhos,
+               shape = shp1,
+               modes = c("fluid","soft"),
+               L = L[i],
+               fb = 1)
+  
+    write.csv(krm1,ofn)
+  }else{krm1 = read.csv(ofn)}
+  p=plot_res(krm1,c(-60,-30))
+  cat("\n")
+
+  print(p)
+  cat("\n")
+
+    
+}
+
+
+```

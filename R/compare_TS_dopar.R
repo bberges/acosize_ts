@@ -23,6 +23,9 @@ sourceDir(myPath$mainPath)
 
 summaryTab <- read.csv(file.path(myPath$resultsPath,'summaryTab.csv'))
 summaryTab <- summaryTab[summaryTab$KRM == 1,]
+summaryTab <- summaryTab[summaryTab$orientation == 'ventral',]
+
+uniqueAnimals <- unique(summaryTab$fish_id)
 
 ncores <- detectCores()-1
 cl <- makeCluster(ncores)
@@ -32,5 +35,5 @@ clusterEvalQ(cl,library(ggplot2))
 clusterEvalQ(cl,library(tidyverse))
 clusterEvalQ(cl,source('G:/git/acosize_ts/R/utilities_plot.R'))
 
-foreach(idx = 1:dim(summaryTab)[1]) %dopar% plotFun(myPath,summaryTab,idx)
+foreach(idxAnimal = uniqueAnimals) %dopar% plotFun(myPath,summaryTab,idxAnimal)
 

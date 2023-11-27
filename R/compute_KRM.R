@@ -9,7 +9,7 @@ myPath <- data.frame(mainPath=file.path("."),
                      resultsPath=file.path(".","results"),
                      softwarePath=file.path(".","software"))
 
-install.packages(file.path(myPath$softwarePath,'KRMr_0.4.2.tar.gz'), repos = NULL, type="source")
+#install.packages(file.path(myPath$softwarePath,'KRMr_0.4.2.tar.gz'), repos = NULL, type="source")
 
 library(KRMr)
 library(imager)
@@ -37,11 +37,19 @@ rhos = c(rho.fb, rho.b)
 
 
 
-for(fish_id in unique(summaryTab$fish_id)[28:31]){
+for(fish_id in unique(summaryTab$fish_id)){
   print(fish_id)
-  currentL <- lengthData$length_2[lengthData$fish_id == fish_id]
-  currentShp = Imagej2shp(shp=read.csv(file.path(myPath$dataPath,'xrays','shapes',paste0(fish_id,'.csv'))))
+  currentL <- lengthData$length_2[lengthData$fish_id == fish_id]*1e-2
   
+  if(fish_id == 'S23'){
+    shp=read.csv(file.path(myPath$dataPath,'xrays','shapes',paste0(fish_id,'.csv')))
+    lb=shp[shp$asp1=="Lateral_bladder",]
+    shp=as.data.frame(shp)%>%dplyr::filter(asp1!="Lateral_bladder")%>%rbind(lb[c(22:99,seq(21,1,by=-1)),])
+    currentShp = Imagej2shp(shp=shp,  dorsal=c("Dorsal_body","Dorsal_bladder"), lateral=c("Lateral_body", "Lateral_bladder"))
+  }else{
+    currentShp = Imagej2shp(shp=read.csv(file.path(myPath$dataPath,'xrays','shapes',paste0(fish_id,'.csv'))))
+  }
+
   currentKRM = krm(frequency = frequency,
                    c.w = c.w,
                    rho.w = rho.w,
@@ -53,5 +61,5 @@ for(fish_id in unique(summaryTab$fish_id)[28:31]){
                    L = currentL,
                    fb = 1)
   
-  write.csv(currentKRM,file = file.path(myPath$resultsPath,'KRM',paste0('krm_',fish_id,'.csv')))
+  write.csv(currentKRM,file = file.path(myPath$resultsPath,'KRM',paste0('krm_',fish_id,'.csv')),row.names = FALSE)
 }

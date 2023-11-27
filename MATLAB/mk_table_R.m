@@ -4,14 +4,14 @@ clc
 
 path = 'G:\git\acosize_ts';
 
-freq    = '70khz';
+freq    = '200khz';
 ramping = {'slow','fast'};
 orientation = {'ventral'};
 
 data_path   = fullfile(path,'data');
 results_path    = fullfile(path,'results','measurements');
 
-load(fullfile(data_path,strcat('acoSize_TS_',freq,'_cut.mat')))
+load(fullfile(data_path,'mat',strcat('acoSize_TS_',freq,'_cut.mat')))
 
 measurement_summary = struct(   'fish_id',{outStruct.fish_id}, ...
                                 'type',{outStruct.type}, ...
@@ -41,6 +41,18 @@ for idx = 1:length(outStruct)
                             outStruct(idx).orientation,'_', ...
                             outStruct(idx).resolution,'_', ...
                             freq));
+                        
+	for idxTS = 1:size(outStruct(idx).TS,2)
+        if ~isempty(outStruct(idx).TS(idxTS).TSMat)
+            outStruct(idx).TS(idxTS).f_vec_inter = ceil(min(outStruct(idx).TS(idxTS).f_vec)*1e-3)*1e3:1e3:floor(max(outStruct(idx).TS(idxTS).f_vec)*1e-3)*1e3;
+            outStruct(idx).TS(idxTS).TSMat_inter = interp1(outStruct(idx).TS(idxTS).f_vec,outStruct(idx).TS(idxTS).TSMat',outStruct(idx).TS(idxTS).f_vec_inter)';
+            outStruct(idx).TS(idxTS).TSkde_inter = interp1(outStruct(idx).TS(idxTS).f_vec,outStruct(idx).TS(idxTS).TSkde',outStruct(idx).TS(idxTS).f_vec_inter)';
+            outStruct(idx).TS(idxTS).TSStats_inter = interp1(outStruct(idx).TS(idxTS).f_vec,outStruct(idx).TS(idxTS).TSStats',outStruct(idx).TS(idxTS).f_vec_inter)';
+        end
+    end
+
+%             plot(outStruct(idx).TS(idxTS).f_vec,outStruct(idx).TS(idxTS).TSStats(2,:), ...
+%                 outStruct(idx).TS(idxTS).f_vec_inter,outStruct(idx).TS(idxTS).TSStats_inter(2,:))
     
     % write TS correlation
     TSCorr = array2table([outStruct(idx).headingPercentilesVec', outStruct(idx).TSCorr'], 'VariableNames', {'angle', 'TSCorr'});
@@ -50,12 +62,13 @@ for idx = 1:length(outStruct)
     while isempty(outStruct(idx).TS(idxTemp).f_vec) && idxTemp < length(outStruct(idx).TS)
         idxTemp = idxTemp+1;
     end
-    colNamesTSStats = [cellstr('angle'); cellstr('percentiles');cellstr(num2str(outStruct(idx).TS(idxTemp).f_vec'))];
-    TSStatsTab = array2table(   zeros(0,size(outStruct(idx).TS(idxTemp).TSStats,2)+2), ...
+    
+    colNamesTSStats = [cellstr('angle'); cellstr('N_spectra');cellstr('percentiles');cellstr(num2str(outStruct(idx).TS(idxTemp).f_vec_inter'))];
+    TSStatsTab = array2table(   zeros(0,size(outStruct(idx).TS(idxTemp).TSStats_inter,2)+3), ...
                                 'VariableNames', colNamesTSStats);
                             
-	colNamesTSkde = [cellstr('angle'); cellstr('TSmesh');cellstr(num2str(outStruct(idx).TS(idxTemp).f_vec'))];
-    TSkdeTab = array2table(   zeros(0,size(outStruct(idx).TS(idxTemp).TSkde,2)+2), ...
+	colNamesTSkde = [cellstr('angle'); cellstr('N_spectra');cellstr('TSmesh');cellstr(num2str(outStruct(idx).TS(idxTemp).f_vec_inter'))];
+    TSkdeTab = array2table(   zeros(0,size(outStruct(idx).TS(idxTemp).TSkde_inter,2)+3), ...
                                 'VariableNames', colNamesTSkde);
 
     % make TS densities
@@ -63,14 +76,16 @@ for idx = 1:length(outStruct)
     for idxAngle = 1:length(outStruct(idx).headingPercentilesVec)
         if ~isempty(outStruct(idx).TS(idxAngle).TSStats)
             TSStats = [repmat(outStruct(idx).headingPercentilesVec(idxAngle),3,1), ...
+                        repmat(size(outStruct(idx).TS(idxAngle).TSMat_inter,1),3,1), ...
                         [25 50 75]', ...
-                        outStruct(idx).TS(idxAngle).TSStats];
+                        outStruct(idx).TS(idxAngle).TSStats_inter];
             TSStatsCurrent = array2table(TSStats, 'VariableNames', colNamesTSStats);
             TSStatsTab = [TSStatsTab;TSStatsCurrent];
             
             TSkde = [repmat(outStruct(idx).headingPercentilesVec(idxAngle),length(outStruct(idx).TS(idxAngle).xmesh),1), ...
+                        repmat(size(outStruct(idx).TS(idxAngle).TSMat_inter,1),length(outStruct(idx).TS(idxAngle).xmesh),1), ...
                         outStruct(idx).TS(idxAngle).xmesh', ...
-                        outStruct(idx).TS(idxAngle).TSkde];
+                        outStruct(idx).TS(idxAngle).TSkde_inter];
                     
             TSkdeCurrent = array2table(TSkde,'VariableNames', colNamesTSkde);
             TSkdeTab = [TSkdeTab;TSkdeCurrent];

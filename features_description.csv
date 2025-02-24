@@ -1,0 +1,22 @@
+Feature,Description
+meanSv,Mean of Sv values across frequency range
+sdSv,SD of Sv values across frequency range
+PCA1,PC reduction along first axis
+PCA2,PC reduction along second axis
+Number of nulls,"Number of nulls, based on peak detection"
+Mean prominence of nulls,Mean prominence of detected nulls
+Mean width of nulls,Mean width (in kHz) of detected nulls
+,
+,
+,
+,
+,
+Feature,Description
+mu,Mean of normal distribution
+sigma,Variance of normal distribution
+SNR,signal to noise ratio
+kurt,kurtosis of distribution
+skew,skewness of distribution
+Npeaks,Number of peaks detection
+widthPeaks,Mean width of peaks detected
+promPeaks,Prominence of peaks detected

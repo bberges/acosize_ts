@@ -1,0 +1,2 @@
+https://machinelearningmastery.com/training-a-multi-target-multilinear-regression-model-in-pytorch/
+https://machinelearningmastery.com/making-predictions-with-multilinear-regression-in-pytorch/

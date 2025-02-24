@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="b9c86457-ce35-4637-9d23-5c18b3a82d94" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/MATLAB/mk_table_R.m" beforeDir="false" afterPath="$PROJECT_DIR$/MATLAB/mk_table_R.m" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/R/compare_TS.R" beforeDir="false" afterPath="$PROJECT_DIR$/R/compare_TS.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/R/compare_TS_dopar.R" beforeDir="false" afterPath="$PROJECT_DIR$/R/compare_TS_dopar.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/R/compute_KRM.R" beforeDir="false" afterPath="$PROJECT_DIR$/R/compute_KRM.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/R/utilities_plot.R" beforeDir="false" afterPath="$PROJECT_DIR$/R/utilities_plot.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/length_data.csv" beforeDir="false" afterPath="$PROJECT_DIR$/data/length_data.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/xrays/20191017_Xray_Saithe01-27/D1QAWW20.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/data/xrays/20191017_Xray_Saithe01-27/D1QAWW20.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_P01.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_P01.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_P02.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_P02.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_P03.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_P03.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_P04.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_P04.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_S01.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_S01.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_S02.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_S02.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_S03.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_S03.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_S04.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_S04.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_S05.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_S05.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_S06.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_S06.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_S07.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_S07.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_S08.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_S08.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/KRM/krm_S09.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/KRM/krm_S09.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/summaryTab.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/summaryTab.csv" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2keSpne9byFfZOli4BMA3RFhGKm" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;G:/acosize_ts/python&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="G:\acosize_ts\python" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.test">
+    <configuration name="acosize_singleTarget_NN" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="acosize_ts" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/python" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/python/acosize_singleTarget_NN.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="acosize_singleTarget_regression" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="acosize_ts" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/python" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/python/acosize_singleTarget_regression.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="acosize_singleTarget_regression_angle" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="acosize_ts" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/python" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/python/acosize_singleTarget_regression_angle.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="acosize_ts" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/python" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/python/test.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.test" />
+        <item itemvalue="Python.acosize_singleTarget_NN" />
+        <item itemvalue="Python.acosize_singleTarget_regression_angle" />
+        <item itemvalue="Python.acosize_singleTarget_regression" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b9c86457-ce35-4637-9d23-5c18b3a82d94" name="Changes" comment="" />
+      <created>1723642734814</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1723642734814</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

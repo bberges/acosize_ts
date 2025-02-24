@@ -8,19 +8,21 @@ library(tidyverse)
 library(icesTAF)
 library(doParallel)
 library(TSdist)
+library(dtw)
 
 
 #path <- 'J:/git/heras_index_kbwot'
-path <- 'G:/git/acosize_ts'
+path <- 'C:/git/acosize_ts'
 
 try(setwd(path),silent=TRUE)
 
 myPath <- data.frame(mainPath=file.path("."),
                      dataPath=file.path(".","data"),
                      figuresPath=file.path(".","figures"),
-                     resultsPath=file.path(".","results"))
+                     resultsPath=file.path(".","results"),
+                     rPath=file.path(".","R"))
 
-sourceDir(myPath$mainPath)
+source(file.path(myPath$rPath,'utilities_calc.R'))
 
 summaryTab <- read.csv(file.path(myPath$resultsPath,'summaryTab.csv'))
 summaryTab <- summaryTab[summaryTab$KRM == 1,]
@@ -28,12 +30,17 @@ summaryTab <- summaryTab[summaryTab$orientation == 'ventral',]
 
 uniqueAnimals <- unique(summaryTab$fish_id)
 
+distanceMeasure <- 'eucl'
+windowing <- 'variableWindow' # variableWindow fixedWindow
+dir.create(file.path(myPath$figuresPath,paste0(windowing,'_',distanceMeasure)),showWarnings = FALSE)
+myPath$figuresPath <- file.path(myPath$figuresPath,paste0(windowing,'_',distanceMeasure))
+
 flagFirstAnimal <- TRUE
 for(idxAnimal in uniqueAnimals){
   print(idxAnimal)
   KRMCurrent <- read.csv(file.path(myPath$resultsPath,'KRM',
                                    paste0('krm_',idxAnimal,'.csv')))
-  
+
   currentTab <- summaryTab[summaryTab$fish_id == idxAnimal,]
 
   flagFirst <- TRUE
@@ -42,8 +49,9 @@ for(idxAnimal in uniqueAnimals){
                         unique(currentTab$mode),'_',
                         idxRamping,'_',
                         unique(currentTab$orientation),'_',
-                        unique(currentTab$resolution))
-    
+                        unique(currentTab$resolution),'_',
+                        windowing)
+
     ###################################
     # load 200khz results
     ###################################
@@ -54,7 +62,7 @@ for(idxAnimal in uniqueAnimals){
     TS.cor.200khz$angleMatch[TS.cor.200khz$angleMatch < 0] <- TS.cor.200khz$angleMatch[TS.cor.200khz$angleMatch < 0]+360
     TS.cor.200khz$freqChan <- '200khz'
     TS.cor.200khz$ramping <- idxRamping
-    
+
     TS.kde.200khz <- read.csv(file.path(myPath$resultsPath,'measurements','200khz',
                                         paste0(measuName.200khz,'_TSkde.csv')),check.names=FALSE)
     TS.kde.200khz <- TS.kde.200khz %>% pivot_longer(!N_spectra & !angle & !TSmesh,names_to = "frequency", values_to = "density")
@@ -63,7 +71,7 @@ for(idxAnimal in uniqueAnimals){
     TS.kde.200khz$angleMatch[TS.kde.200khz$angleMatch < 0] <- TS.kde.200khz$angleMatch[TS.kde.200khz$angleMatch < 0]+360
     TS.kde.200khz$freqChan <- '200khz'
     TS.kde.200khz$ramping <- idxRamping
-    
+
     TS.stats.200khz <- read.csv(file.path(myPath$resultsPath,'measurements','200khz',
                                           paste0(measuName.200khz,'_TSStats.csv')),check.names=FALSE)
     TS.stats.200khz <- TS.stats.200khz %>% pivot_longer(!N_spectra & !angle & !percentiles,names_to = "frequency", values_to = "TS")
@@ -72,7 +80,19 @@ for(idxAnimal in uniqueAnimals){
     TS.stats.200khz$angleMatch[TS.stats.200khz$angleMatch < 0] <- TS.stats.200khz$angleMatch[TS.stats.200khz$angleMatch < 0]+360
     TS.stats.200khz$freqChan <- '200khz'
     TS.stats.200khz$ramping <- idxRamping
-    
+
+    TS.mat.200khz <- read.csv(file.path(myPath$resultsPath,'measurements','200khz',
+                                          paste0(measuName.200khz,'_TSMat.csv')),check.names=FALSE)
+    TS.mat.200khz$spectra_id.str.angle <- paste0(TS.mat.200khz$angle,'_',idxRamping,'_',TS.mat.200khz$spectra_id)
+    TS.mat.200khz <- TS.mat.200khz %>% pivot_longer(!angle & !spectra_id & !spectra_id.str.angle,names_to = "frequency", values_to = "TS")
+    TS.mat.200khz$frequency <- as.numeric(TS.mat.200khz$frequency)
+    TS.mat.200khz$angleMatch <- TS.mat.200khz$angle-270
+    TS.mat.200khz$angleMatch[TS.mat.200khz$angleMatch < 0] <- TS.mat.200khz$angleMatch[TS.mat.200khz$angleMatch < 0]+360
+    TS.mat.200khz$spectra_id.str <- paste0(TS.mat.200khz$angleMatch,'_',idxRamping,'_',TS.mat.200khz$spectra_id)
+    TS.mat.200khz$freqChan <- '200khz'
+    TS.mat.200khz$ramping <- idxRamping
+    TS.mat.200khz <- TS.mat.200khz %>% select(-c('spectra_id.str.angle'))
+
     ###################################
     # load 70khz results
     ###################################
@@ -83,7 +103,7 @@ for(idxAnimal in uniqueAnimals){
     TS.cor.70khz$angleMatch[TS.cor.70khz$angleMatch < 0] <- TS.cor.70khz$angleMatch[TS.cor.70khz$angleMatch < 0]+360
     TS.cor.70khz$freqChan <- '70khz'
     TS.cor.70khz$ramping <- idxRamping
-    
+
     TS.kde.70khz <- read.csv(file.path(myPath$resultsPath,'measurements','70khz',
                                        paste0(measuName.70khz,'_TSkde.csv')),check.names=FALSE)
     TS.kde.70khz <- TS.kde.70khz %>% pivot_longer(!N_spectra & !angle & !TSmesh,names_to = "frequency", values_to = "density")
@@ -92,7 +112,7 @@ for(idxAnimal in uniqueAnimals){
     TS.kde.70khz$angleMatch[TS.kde.70khz$angleMatch < 0] <- TS.kde.70khz$angleMatch[TS.kde.70khz$angleMatch < 0]+360
     TS.kde.70khz$freqChan <- '70khz'
     TS.kde.70khz$ramping <- idxRamping
-    
+
     TS.stats.70khz <- read.csv(file.path(myPath$resultsPath,'measurements','70khz',
                                          paste0(measuName.70khz,'_TSStats.csv')),check.names=FALSE)
     TS.stats.70khz <- TS.stats.70khz %>% pivot_longer(!N_spectra & !angle & !percentiles,names_to = "frequency", values_to = "TS")
@@ -101,7 +121,19 @@ for(idxAnimal in uniqueAnimals){
     TS.stats.70khz$angleMatch[TS.stats.70khz$angleMatch < 0] <- TS.stats.70khz$angleMatch[TS.stats.70khz$angleMatch < 0]+360
     TS.stats.70khz$freqChan <- '70khz'
     TS.stats.70khz$ramping <- idxRamping
-    
+
+    TS.mat.70khz <- read.csv(file.path(myPath$resultsPath,'measurements','70khz',
+                                        paste0(measuName.70khz,'_TSMat.csv')),check.names=FALSE)
+    TS.mat.70khz$spectra_id.str.angle <- paste0(TS.mat.70khz$angle,'_',idxRamping,'_',TS.mat.70khz$spectra_id)
+    TS.mat.70khz <- TS.mat.70khz %>% pivot_longer(!angle & !spectra_id & !spectra_id.str.angle,names_to = "frequency", values_to = "TS")
+    TS.mat.70khz$frequency <- as.numeric(TS.mat.70khz$frequency)
+    TS.mat.70khz$angleMatch <- TS.mat.70khz$angle-270
+    TS.mat.70khz$angleMatch[TS.mat.70khz$angleMatch < 0] <- TS.mat.70khz$angleMatch[TS.mat.70khz$angleMatch < 0]+360
+    TS.mat.70khz$spectra_id.str <- paste0(TS.mat.70khz$angleMatch,'_',idxRamping,'_',TS.mat.70khz$spectra_id)
+    TS.mat.70khz$freqChan <- '70khz'
+    TS.mat.70khz$ramping <- idxRamping
+    TS.mat.70khz <- TS.mat.70khz %>% select(-c('spectra_id.str.angle'))
+
     ###################################
     # combine tables
     ###################################
@@ -109,392 +141,437 @@ for(idxAnimal in uniqueAnimals){
       TS.cor.all <- rbind(TS.cor.70khz,TS.cor.200khz)
       TS.stats.all <- rbind(TS.stats.70khz,TS.stats.200khz)
       TS.kde.all <- rbind(TS.kde.70khz,TS.kde.200khz)
+      TS.mat.all <- rbind(TS.mat.70khz,TS.mat.200khz)
       flagFirst <- FALSE
     }else{
       TS.cor.all <- rbind(TS.cor.all,TS.cor.70khz,TS.cor.200khz)
       TS.stats.all <- rbind(TS.stats.all,TS.stats.70khz,TS.stats.200khz)
       TS.kde.all <- rbind(TS.kde.all,TS.kde.70khz,TS.kde.200khz)
+      TS.mat.all <- rbind(TS.mat.all,TS.mat.70khz,TS.mat.200khz)
     }
   }
-  
+
+  # temp <- subset(TS.mat.all,angleMatch==0 & ramping=='slow')
+  # temp$TS[temp$frequency == 87000] <- NA
+  #
+  # scaling_factor <- 1
+  # png(file.path(myPath$figuresPath,'spectra_ind_0.png'),
+  #     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
+  #
+  # p <- ggplot(temp,aes(x=frequency*1e-3,y=TS,col=as.factor(spectra_id)))+
+  #       geom_line()+
+  #       theme_bw()+
+  #       theme(legend.position = 'none')+
+  #       xlab('Frequency (kHz)')+
+  #       ylab(expression('TS (dB re 1m'^'2'*')'))+
+  #       ylim(-70,-30)
+  #
+  # print(p)
+  # dev.off()
+  #
+  # out$metrics.slow_fast$idxBestFast
+
+  #angleSel <- 115
+  #windows()
+  #ggplot()+
+  #  geom_tile(data=subset(TS.kde.all,ramping=='fast' & angleMatch == angleSel & freqChan =='70khz'),
+  #            aes(x=frequency,y=TSmesh,fill=density))+
+  #  geom_tile(data=subset(TS.kde.all,ramping=='fast' & angleMatch == angleSel & freqChan =='200khz'),
+  #            aes(x=frequency,y=TSmesh,fill=density))+
+  #  geom_line(data=subset(TS.mat.all,ramping=='fast' & angleMatch == angleSel & freqChan =='70khz'),aes(x=frequency,y=TS,col=as.factor(spectra_id)),alpha=0.3)+
+  #  geom_line(data=subset(TS.mat.all,ramping=='fast' & angleMatch == angleSel & freqChan =='200khz'),aes(x=frequency,y=TS,col=as.factor(spectra_id)),alpha=0.3)+
+  #  geom_line(data=subset(KRMCurrent,theta==angleSel),aes(x=frequency,y=TS),linewidth=1)+
+  #  scale_fill_viridis_b()+
+  #  ylim(-70,-25)+
+  #  xlim(50*1e3,280*1e3)
+
   KRMCurrent.filt <- KRMCurrent[KRMCurrent$frequency %in% unique(TS.stats.all$frequency),]
   uniqueAngles.model <- unique(KRMCurrent.filt$theta)
-  
+
   freq.70khz <- unique(TS.stats.all$frequency[TS.stats.all$freqChan == '70khz'])
   freq.200khz <- unique(TS.stats.all$frequency[TS.stats.all$freqChan == '200khz'])
-  
+
   idx70khz <- unique(TS.stats.all$frequency) %in% freq.70khz
   idx200khz <- unique(TS.stats.all$frequency) %in% freq.200khz
 
-  TS.stats.wide <- TS.stats.all %>% group_by(angle,percentiles,frequency,angleMatch,ramping) %>% summarize(TS=TS) %>% pivot_wider(names_from=frequency,values_from=TS)
-  TS.stats.wide <- TS.stats.all %>% group_by(angle,percentiles,frequency,angleMatch,ramping) %>% summarize(TS=TS) %>% pivot_wider(names_from=frequency,values_from=TS)
-  uniqueAngles <- unique(TS.stats.wide$angleMatch)
-  
-  
-  diff.fast_slow <- as.data.frame(matrix(ncol = length(unique(TS.stats.all$frequency))+1, nrow = length(uniqueAngles)))
-  colnames(diff.fast_slow) <- c('angleMatch',unique(TS.stats.all$frequency))
-  
-  metrics.fast_slow <- as.data.frame(matrix(ncol = 8, nrow = length(uniqueAngles)*3))
-  colnames(metrics.fast_slow) <- c('angleMatch','freqChan','quant90','quant50','quant10','mean','cor','dist.cor')
+  TS.mat.wide <- TS.mat.all  %>% group_by(angle,frequency,angleMatch,ramping,spectra_id.str) %>% summarize(TS=TS) %>% pivot_wider(names_from=frequency,values_from=TS)
+  uniqueAngles <- unique(TS.mat.wide$angleMatch)
 
-  diff.model <- as.data.frame(matrix(ncol = length(unique(TS.stats.all$frequency))+2, nrow = length(uniqueAngles.model)*2))
-  colnames(diff.model) <- c('angleMatch','ramping',unique(TS.stats.all$frequency))
-  
-  metrics.model <- as.data.frame(matrix(ncol = 9, nrow = length(uniqueAngles.model)*2*3))
-  colnames(metrics.model) <- c('angleMatch','ramping','freqChan','quant90','quant50','quant10','mean','cor','dist.cor')
+  # open pdf for plotting
+  pdf(file.path(myPath$figuresPath,paste0(measuName,'_TS spectra.pdf')))
 
-  counter.fast_slow <- 1
-  counter.model <- 1
+  flagFirst <- TRUE
   for(idxAngle in uniqueAngles){
-    TS.stats.wide.filter <- subset(TS.stats.wide,angleMatch == idxAngle & percentiles == 50)
-    TS.stats.wide.filter <- TS.stats.wide.filter %>% ungroup() %>% select(-c('angle','percentiles','angleMatch'))
-    
-    #plot.df <- subset(TS.stats.wide.filter,ramping=='fast') %>% pivot_longer(!ramping,names_to = 'frequency',values_to = 'TS')
-    #plot.df$frequency <- as.numeric(plot.df$frequency)
-    #ggplot()+
-    #  geom_line(data=KRMCurrent.current,aes(x=frequency,y=TS),col='blue')+
-    #  geom_line(data=plot.df,aes(x=frequency,y=TS),col='red')
-    
-    ts.slow <- as.numeric(TS.stats.wide.filter[TS.stats.wide.filter$ramping == 'slow',] %>% select(-c('ramping')))
-    ts.fast <- as.numeric(TS.stats.wide.filter[TS.stats.wide.filter$ramping == 'fast',] %>% select(-c('ramping')))
-    myVec.fast_slow <- ts.fast-ts.slow
-    
-    diff.fast_slow[counter.fast_slow,2:(length(unique(TS.stats.all$frequency))+1)] <- myVec.fast_slow
-    diff.fast_slow$angleMatch[counter.fast_slow] <- idxAngle
-    
-    metrics.fast_slow$angleMatch[counter.fast_slow] <- idxAngle
-    metrics.fast_slow$quant90[counter.fast_slow] <- quantile(abs(myVec.fast_slow),c(0.9),na.rm=TRUE)
-    metrics.fast_slow$quant50[counter.fast_slow] <- quantile(abs(myVec.fast_slow),c(0.5),na.rm=TRUE)
-    metrics.fast_slow$quant10[counter.fast_slow] <- quantile(abs(myVec.fast_slow),c(0.1),na.rm=TRUE)
-    metrics.fast_slow$mean[counter.fast_slow]    <- mean(abs(myVec.fast_slow),na.rm=TRUE)
-    metrics.fast_slow$cor[counter.fast_slow]       <- cor(ts.slow,ts.fast)
-    metrics.fast_slow$dist.cor[counter.fast_slow]  <- TSDistances(ts.slow, ts.fast, distance="cor")
-    metrics.fast_slow$freqChan[counter.fast_slow] <- 'all'
-    counter.fast_slow <- counter.fast_slow+1
-    
-    metrics.fast_slow$angleMatch[counter.fast_slow] <- idxAngle
-    metrics.fast_slow$quant90[counter.fast_slow] <- quantile(abs(myVec.fast_slow[idx70khz]),c(0.9),na.rm=TRUE)
-    metrics.fast_slow$quant50[counter.fast_slow] <- quantile(abs(myVec.fast_slow[idx70khz]),c(0.5),na.rm=TRUE)
-    metrics.fast_slow$quant10[counter.fast_slow] <- quantile(abs(myVec.fast_slow[idx70khz]),c(0.1),na.rm=TRUE)
-    metrics.fast_slow$mean[counter.fast_slow]    <- mean(abs(myVec.fast_slow[idx70khz]),na.rm=TRUE)
-    metrics.fast_slow$cor[counter.fast_slow]       <- cor(ts.slow[idx70khz],ts.fast[idx70khz])
-    metrics.fast_slow$dist.cor[counter.fast_slow]  <- TSDistances(ts.slow[idx70khz], ts.fast[idx70khz], distance="cor")
-    metrics.fast_slow$freqChan[counter.fast_slow] <- '70khz'
-    counter.fast_slow <- counter.fast_slow+1
-    
-    metrics.fast_slow$angleMatch[counter.fast_slow] <- idxAngle
-    metrics.fast_slow$quant90[counter.fast_slow] <- quantile(abs(myVec.fast_slow[idx200khz]),c(0.9),na.rm=TRUE)
-    metrics.fast_slow$quant50[counter.fast_slow] <- quantile(abs(myVec.fast_slow[idx200khz]),c(0.5),na.rm=TRUE)
-    metrics.fast_slow$quant10[counter.fast_slow] <- quantile(abs(myVec.fast_slow[idx200khz]),c(0.1),na.rm=TRUE)
-    metrics.fast_slow$mean[counter.fast_slow]    <- mean(abs(myVec.fast_slow[idx200khz]),na.rm=TRUE)
-    metrics.fast_slow$cor[counter.fast_slow]       <- cor(ts.slow[idx200khz],ts.fast[idx200khz])
-    metrics.fast_slow$dist.cor[counter.fast_slow]  <- TSDistances(ts.slow[idx200khz], ts.fast[idx200khz], distance="cor")
-    metrics.fast_slow$freqChan[counter.fast_slow] <- '200khz'
-    counter.fast_slow <- counter.fast_slow+1
+    print(idxAngle)
+    TS.mat.wide.current <- subset(TS.mat.wide,angleMatch == idxAngle)
+    TS.mat.wide.current.info <- TS.mat.wide.current %>% ungroup() %>% select(c('ramping','angle','angleMatch','spectra_id.str'))
+    TS.mat.wide.current <- TS.mat.wide.current %>% ungroup() %>% select(-c('angle','angleMatch','spectra_id.str'))
 
-    if(idxAngle %in% unique(KRMCurrent.filt$theta)){
-      KRMCurrent.current <- subset(KRMCurrent.filt,theta == idxAngle) %>% dplyr::select(c('frequency','TS'))# %>% pivot_longer(names_from=frequency,values_from=TS)
-      ts.model <- KRMCurrent.current$TS
-      myVec.model.fast <- ts.fast-ts.model
-      myVec.model.slow <- ts.slow-ts.model
+    KRMCurrent.current <- subset(KRMCurrent.filt,theta == idxAngle) %>% dplyr::select(c('frequency','TS'))# %>% pivot_longer(names_from=frequency,values_from=TS)
 
-      diff.model[counter.model,3:(length(unique(TS.stats.all$frequency))+2)]    <- myVec.model.fast
-      diff.model[counter.model+1,3:(length(unique(TS.stats.all$frequency))+2)]  <- myVec.model.slow
-      diff.model$angleMatch[counter.model:(counter.model+1)] <- idxAngle
-      diff.model$ramping[counter.model] <- 'fast'
-      diff.model$ramping[counter.model+1] <- 'slow'
-      
-      metrics.model$angleMatch[counter.model] <- idxAngle
-      metrics.model$ramping[counter.model] <- 'fast'
-      metrics.model$freqChan[counter.model] <- 'all'
-      metrics.model$quant90[counter.model]   <- quantile(abs(myVec.model.fast),c(0.9),na.rm=TRUE)
-      metrics.model$quant50[counter.model]   <- quantile(abs(myVec.model.fast),c(0.5),na.rm=TRUE)
-      metrics.model$quant10[counter.model]   <- quantile(abs(myVec.model.fast),c(0.1),na.rm=TRUE)
-      metrics.model$mean[counter.model]      <- mean(abs(myVec.model.fast),na.rm=TRUE)
-      metrics.model$cor[counter.model]       <- cor(ts.fast,ts.model)
-      metrics.model$dist.cor[counter.model]  <- TSDistances(ts.fast, ts.model, distance="cor")
-      counter.model <- counter.model+1
-      
-      metrics.model$angleMatch[counter.model] <- idxAngle
-      metrics.model$ramping[counter.model] <- 'slow'
-      metrics.model$freqChan[counter.model] <- 'all'
-      metrics.model$quant90[counter.model]   <- quantile(abs(myVec.model.slow),c(0.9),na.rm=TRUE)
-      metrics.model$quant50[counter.model]   <- quantile(abs(myVec.model.slow),c(0.5),na.rm=TRUE)
-      metrics.model$quant10[counter.model]   <- quantile(abs(myVec.model.slow),c(0.1),na.rm=TRUE)
-      metrics.model$mean[counter.model]      <- mean(abs(myVec.model.slow),na.rm=TRUE)
-      metrics.model$cor[counter.model]       <- cor(ts.slow,ts.model)
-      metrics.model$dist.cor[counter.model]  <- TSDistances(ts.slow, ts.model, distance="cor")
-      counter.model <- counter.model+1
-      
-      metrics.model$angleMatch[counter.model] <- idxAngle
-      metrics.model$ramping[counter.model] <- 'fast'
-      metrics.model$freqChan[counter.model] <- '70khz'
-      metrics.model$quant90[counter.model]   <- quantile(abs(myVec.model.fast[idx70khz]),c(0.9),na.rm=TRUE)
-      metrics.model$quant50[counter.model]   <- quantile(abs(myVec.model.fast[idx70khz]),c(0.5),na.rm=TRUE)
-      metrics.model$quant10[counter.model]   <- quantile(abs(myVec.model.fast[idx70khz]),c(0.1),na.rm=TRUE)
-      metrics.model$mean[counter.model]      <- mean(abs(myVec.model.fast[idx70khz]),na.rm=TRUE)
-      metrics.model$cor[counter.model]       <- cor(ts.fast[idx70khz],ts.model[idx70khz])
-      metrics.model$dist.cor[counter.model]  <- TSDistances(ts.fast[idx70khz], ts.model[idx70khz], distance="cor")
-      counter.model <- counter.model+1
-      
-      metrics.model$angleMatch[counter.model] <- idxAngle
-      metrics.model$ramping[counter.model] <- 'slow'
-      metrics.model$freqChan[counter.model] <- '70khz'
-      metrics.model$quant90[counter.model]   <- quantile(abs(myVec.model.slow[idx70khz]),c(0.9),na.rm=TRUE)
-      metrics.model$quant50[counter.model]   <- quantile(abs(myVec.model.slow[idx70khz]),c(0.5),na.rm=TRUE)
-      metrics.model$quant10[counter.model]   <- quantile(abs(myVec.model.slow[idx70khz]),c(0.1),na.rm=TRUE)
-      metrics.model$mean[counter.model]      <- mean(abs(myVec.model.slow[idx70khz]),na.rm=TRUE)
-      metrics.model$cor[counter.model]       <- cor(ts.slow[idx70khz],ts.model[idx70khz])
-      metrics.model$dist.cor[counter.model]  <- TSDistances(ts.slow[idx70khz], ts.model[idx70khz], distance="cor")
-      counter.model <- counter.model+1
-      
-      metrics.model$angleMatch[counter.model] <- idxAngle
-      metrics.model$ramping[counter.model] <- 'fast'
-      metrics.model$freqChan[counter.model] <- '200khz'
-      metrics.model$quant90[counter.model]   <- quantile(abs(myVec.model.fast[idx200khz]),c(0.9),na.rm=TRUE)
-      metrics.model$quant50[counter.model]   <- quantile(abs(myVec.model.fast[idx200khz]),c(0.5),na.rm=TRUE)
-      metrics.model$quant10[counter.model]   <- quantile(abs(myVec.model.fast[idx200khz]),c(0.1),na.rm=TRUE)
-      metrics.model$mean[counter.model]      <- mean(abs(myVec.model.fast[idx200khz]),na.rm=TRUE)
-      metrics.model$cor[counter.model]       <- cor(ts.fast[idx200khz],ts.model[idx200khz])
-      metrics.model$dist.cor[counter.model]  <- TSDistances(ts.fast[idx200khz], ts.model[idx200khz], distance="cor")
-      counter.model <- counter.model+1
-      
-      metrics.model$angleMatch[counter.model] <- idxAngle
-      metrics.model$ramping[counter.model] <- 'slow'
-      metrics.model$freqChan[counter.model] <- '200khz'
-      metrics.model$quant90[counter.model]   <- quantile(abs(myVec.model.slow[idx200khz]),c(0.9),na.rm=TRUE)
-      metrics.model$quant50[counter.model]   <- quantile(abs(myVec.model.slow[idx200khz]),c(0.5),na.rm=TRUE)
-      metrics.model$quant10[counter.model]   <- quantile(abs(myVec.model.slow[idx200khz]),c(0.1),na.rm=TRUE)
-      metrics.model$mean[counter.model]      <- mean(abs(myVec.model.slow[idx200khz]),na.rm=TRUE)
-      metrics.model$cor[counter.model]       <- cor(ts.slow[idx200khz],ts.model[idx200khz])
-      metrics.model$dist.cor[counter.model]  <- TSDistances(ts.slow[idx200khz], ts.model[idx200khz], distance="cor")
-      counter.model <- counter.model+1
+    angleMatch <- idxAngle
+
+    if(distanceMeasure == 'dtw'){
+      out <- computeDistDTWMat(idxAngle,
+                               KRMCurrent.current,
+                               TS.mat.wide.current,
+                               TS.mat.wide.current.info,
+                               idx70khz,idx200khz)
+    }else if(distanceMeasure == 'eucl'){
+      out <- computeDistEuclMat(idxAngle,
+                                KRMCurrent.current,
+                                TS.mat.wide.current,
+                                TS.mat.wide.current.info,
+                                idx70khz,idx200khz)
+    }
+
+    # # pull out matching spectra
+    flagFirstSpectra <- TRUE
+    for(idxFreq in c('70khz','200khz')){ # 'all'
+      if(idxFreq == '70khz'){
+        freq.filt <- freq.70khz
+        freq.sel <- '70khz'
+      }else if(idxFreq == '200khz'){
+        freq.filt <- freq.200khz
+        freq.sel <- '200khz'
+      }else if(idxFreq =='all'){
+        freq.filt <- c(freq.70khz,freq.200khz)
+        freq.sel <- c('70khz','200khz')
+      }
+
+      if(dim(subset(out$metrics.slow_fast,freqChan == idxFreq))[1] != 0){
+        TS.best.fast <- subset(TS.mat.all,freqChan %in% freq.sel &
+                                 spectra_id.str == subset(out$metrics.slow_fast,freqChan == idxFreq)$idxBestFast)
+        TS.best.slow <- subset(TS.mat.all,freqChan %in% freq.sel &
+                                 spectra_id.str == subset(out$metrics.slow_fast,freqChan == idxFreq)$idxBestSlow)
+        spectra.best <- rbind(TS.best.fast,TS.best.slow)
+        spectra.best <- subset(spectra.best,frequency %in% freq.filt)
+        spectra.best$cat <- 'slow_fast'
+
+        if(flagFirstSpectra){
+          spectra.best.all <- spectra.best
+          spectra.best.all$freqChan <- factor(spectra.best.all$freqChan,levels=c('70khz','200khz'))
+          spectra.best.all$cat <- factor(spectra.best.all$cat,levels=c('model','slow_fast'))
+          spectra.best.all$ramping <- factor(spectra.best.all$ramping,levels=c('slow','fast','model'))
+          flagFirstSpectra <- FALSE
+        }else{
+          spectra.best.all <- rbind(spectra.best.all,spectra.best)
+        }
+      }
+
+      if(dim(subset(out$metrics.model,freqChan == idxFreq))[1] != 0){
+        metrics.model.current <- subset(out$metrics.model,freqChan == idxFreq)
+
+        for(idxSpecRamp in unique(metrics.model.current$ramping)){
+          str.spectra.best <- subset(metrics.model.current,ramping == idxSpecRamp)$idxBest
+          spectra.best <- subset(TS.mat.all,freqChan %in% freq.sel &
+                                   spectra_id.str == str.spectra.best)
+          spectra.best <- subset(spectra.best,frequency %in% freq.filt)
+          spectra.best$cat <- 'model'
+
+          if(flagFirstSpectra){
+            spectra.best.all <- spectra.best
+            spectra.best.all$freqChan <- factor(spectra.best.all$freqChan,levels=c('70khz','200khz'))
+            spectra.best.all$cat <- factor(spectra.best.all$cat,levels=c('model','slow_fast'))
+            spectra.best.all$ramping <- factor(spectra.best.all$ramping,levels=c('slow','fast','model'))
+            flagFirstSpectra <- FALSE
+          }else{
+            spectra.best.all <- rbind(spectra.best.all,spectra.best)
+          }
+        }
+
+        spectrum.model <- KRMCurrent.current
+        spectrum.model$angle <- unique(subset(TS.mat.wide,angleMatch == idxAngle)$angle)
+        spectrum.model$spectra_id <- -1
+        spectrum.model$angleMatch <- idxAngle
+        spectrum.model$freqChan   <- NA
+        spectrum.model$freqChan[spectrum.model$frequency %in% freq.70khz] <- '70khz'
+        spectrum.model$freqChan[spectrum.model$frequency %in% freq.200khz] <- '200khz'
+        spectrum.model$spectra_id.str <- paste0(idxAngle,'_model_0')
+        spectrum.model$ramping <- 'model'
+        spectrum.model$cat <- 'model'
+        spectrum.model <- subset(spectrum.model,freqChan == idxFreq)
+
+        spectra.best.all <- rbind(spectra.best.all,spectrum.model)
+      }
+    }
+
+    if(exists('spectra.best.all')){
+      print(ggplot(spectra.best.all,aes(x=frequency*1e-3,y=TS,col=ramping))+
+              geom_line()+
+              facet_grid(cat~freqChan,scales = 'free_x',drop=FALSE)+
+              labs(title=paste0(idxAnimal,' - angle=',idxAngle),
+                   x='Frequency (kHz)',
+                   y='TS (dB)'))
+              #xlim(50,280)+
+              #ylim(-75,-25))
+      rm(spectra.best.all)
+    }
+
+
+    if(flagFirst){
+      metrics.slow_fast <- out$metrics.slow_fast
+      metrics.model     <- out$metrics.model
+      flagFirst <- FALSE
+    }else{
+      metrics.slow_fast <- rbind(metrics.slow_fast,out$metrics.slow_fast)
+      metrics.model     <- rbind(metrics.model,out$metrics.model)
     }
   }
-  
-  metrics.model$fish_id <- idxAnimal
-  diff.model$fish_id <- idxAnimal
-  metrics.fast_slow$fish_id <- idxAnimal
-  diff.fast_slow$fish_id <- idxAnimal
-  
-  if(flagFirstAnimal){
-    metrics.model.all <- metrics.model
-    diff.model.all <- diff.model
-    metrics.fast_slow.all <- metrics.fast_slow
-    diff.fast_slow.all <- diff.fast_slow
-    flagFirstAnimal <- FALSE
-  }else{
-    metrics.model.all <- rbind(metrics.model.all,metrics.model)
-    diff.model.all <- rbind(diff.model.all,diff.model)
-    metrics.fast_slow.all <- rbind(metrics.fast_slow.all,metrics.fast_slow)
-    diff.fast_slow.all <- rbind(diff.fast_slow.all,diff.fast_slow)
+
+  # closing pdf for plotting
+  dev.off()
+
+
+  # ggplot(subset(metrics.slow_fast,freqChan =='70khz'),aes(x=angleMatch,y=log(meanDist)))+
+  #   geom_point()
+  #
+  # ggplot()+
+  #   geom_point(data=subset(metrics.model,freqChan =='200khz' & ramping == 'slow'),aes(x=angleMatch,y=log(sdDist)),col='red')+
+  #   geom_point(data=subset(metrics.model,freqChan =='70khz' & ramping == 'slow'),aes(x=angleMatch,y=log(sdDist)),col='blue')+
+  #   xlim(65,115)
+  #
+  # ggplot(subset(metrics.model,freqChan =='70khz' & ramping == 'fast'),aes(x=angleMatch,y=(meanDistTrunc25)))+
+  #   geom_line()
+  #
+  # ggplot(subset(metrics.slow_fast,freqChan =='200khz'),aes(x=angleMatch,y=(sdDist)))+
+  #   geom_point()
+  #
+  #
+  # ggplot(subset(metrics.model.dB,freqChan =='70khz' & ramping == 'slow'),aes(x=angleMatch,y=log(minDist)))+
+  #   geom_point()
+
+  ##################################################################
+  # plotting individual spectra best fast/slow match
+  ##################################################################
+  metrics.slow_fast.alt <- metrics.slow_fast[!is.na(metrics.slow_fast$meanDist),]
+  uniqueAngles <- unique(metrics.slow_fast$angleMatch)
+
+  idxFreq <- '200khz'
+  flagFirstTemp <- TRUE
+  for(idxAngle in uniqueAngles){
+    metrics.slow_fast.filt <- subset(metrics.slow_fast.alt,angleMatch == idxAngle & freqChan == idxFreq)
+
+    if(dim(metrics.slow_fast.filt)[1] != 0){
+      mySpectra.slow <- subset(TS.mat.all,freqChan == idxFreq & spectra_id.str == metrics.slow_fast.filt$idxBestSlow)
+      mySpectra.fast <- subset(TS.mat.all,freqChan == idxFreq & spectra_id.str == metrics.slow_fast.filt$idxBestFast)
+
+      mySpectra <- rbind(mySpectra.slow,mySpectra.fast)
+
+      if(flagFirstTemp){
+        spectra.plot <- mySpectra
+        flagFirstTemp <- FALSE
+      }else{
+        spectra.plot <- rbind(spectra.plot,mySpectra)
+      }
+    }
   }
-  
+
+  scaling_factor <- 2
+  png(file.path(myPath$figuresPath,paste0('TS_measurements_',idxAnimal,'_200khz.png')),
+      width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
+
+  p <- ggplot(data=spectra.plot, aes(x=frequency/1e3, y=angleMatch, fill=TS))+
+        geom_tile()+
+        scale_fill_gradientn(colors=rev(pals::brewer.spectral(15)),
+                             limits=c(-60,-30), oob=scales::squish,
+                             name=expression(TS~"(dB re 1"*m^2*")"))+
+        scale_x_continuous(expand=c(0,0))+
+        scale_y_continuous(expand=c(0,0))+
+        ylab(expression(theta~"(°)"))+
+        xlab("Frequency (kHz)")+
+        theme_classic()+
+        theme(legend.position = "bottom",
+              text=element_text(size=16),
+              legend.key.width = unit(2, 'cm'))+
+        facet_wrap(~ramping)
+
+  print(p)
+  dev.off()
+
+
+  idxFreq <- '70khz'
+  flagFirstTemp <- TRUE
+  for(idxAngle in uniqueAngles){
+    metrics.slow_fast.filt <- subset(metrics.slow_fast.alt,angleMatch == idxAngle & freqChan == idxFreq)
+
+    if(dim(metrics.slow_fast.filt)[1] != 0){
+      mySpectra.slow <- subset(TS.mat.all,freqChan == idxFreq & spectra_id.str == metrics.slow_fast.filt$idxBestSlow)
+      mySpectra.fast <- subset(TS.mat.all,freqChan == idxFreq & spectra_id.str == metrics.slow_fast.filt$idxBestFast)
+
+      mySpectra <- rbind(mySpectra.slow,mySpectra.fast)
+
+      if(flagFirstTemp){
+        spectra.plot <- mySpectra
+        flagFirstTemp <- FALSE
+      }else{
+        spectra.plot <- rbind(spectra.plot,mySpectra)
+      }
+    }
+  }
+
+  scaling_factor <- 2
+  png(file.path(myPath$figuresPath,paste0('TS_measurements_',idxAnimal,'_70khz.png')),
+      width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
+
+  p <- ggplot(data=spectra.plot, aes(x=frequency/1e3, y=angleMatch, fill=TS))+
+    geom_tile()+
+    scale_fill_gradientn(colors=rev(pals::brewer.spectral(15)),
+                         limits=c(-60,-30), oob=scales::squish,
+                         name=expression(TS~"(dB re 1"*m^2*")"))+
+    scale_x_continuous(expand=c(0,0))+
+    scale_y_continuous(expand=c(0,0))+
+    ylab(expression(theta~"(°)"))+
+    xlab("Frequency (kHz)")+
+    theme_classic()+
+    theme(legend.position = "bottom",
+          text=element_text(size=16),
+          legend.key.width = unit(2, 'cm'))+
+    facet_wrap(~ramping)
+
+  print(p)
+  dev.off()
+
+  ##################################################################
+  # plotting individual spectra against model
+  ##################################################################
+  metrics.model.alt <- metrics.model[!is.na(metrics.model$meanTS.model),]
+  uniqueAngles <- unique(metrics.model$angleMatch)
+
+
+  scaling_factor <- 2
+  png(file.path(myPath$figuresPath,paste0('TS_model vs measurements_',idxAnimal,'_70khz.png')),
+      width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
+
+  idxFreq <- '70khz'
+  idxRamping  <- 'fast'
+  flagFirstTemp <- TRUE
+  for(idxAngle in uniqueAngles){
+    metrics.model.filt <- subset(metrics.model.alt,angleMatch == idxAngle & freqChan == idxFreq & ramping == idxRamping)
+
+    if(dim(metrics.model.filt)[1] != 0){
+      mySpectra <- subset(TS.mat.all,freqChan == idxFreq & ramping == idxRamping & spectra_id.str == metrics.model.filt$idxBest)
+
+      if(flagFirstTemp){
+        spectra.plot <- mySpectra
+        flagFirstTemp <- FALSE
+      }else{
+        spectra.plot <- rbind(spectra.plot,mySpectra)
+      }
+    }
+  }
+
+  spectra.plot <- spectra.plot %>% select(c('frequency','angleMatch','TS'))
+  spectra.plot$type <- 'measurements'
+  KRMCurrent.plot <- KRMCurrent.filt[KRMCurrent.filt$frequency %in% freq.70khz,]
+  KRMCurrent.plot$angleMatch <- KRMCurrent.plot$theta
+  KRMCurrent.plot <- KRMCurrent.plot %>% select(c('frequency','angleMatch','TS'))
+  KRMCurrent.plot$type <- 'model'
+  spectra.plot <- rbind(spectra.plot,KRMCurrent.plot)
+
+  p <- ggplot(data=spectra.plot, aes(x=frequency/1e3, y=angleMatch, fill=TS))+
+        geom_tile()+
+        scale_fill_gradientn(colors=rev(pals::brewer.spectral(15)),
+                             limits=c(-60,-30), oob=scales::squish,
+                             name=expression(TS~"(dB re 1"*m^2*")"))+
+        scale_x_continuous(expand=c(0,0))+
+        scale_y_continuous(expand=c(0,0))+
+        ylab(expression(theta~"(°)"))+
+        xlab("Frequency (kHz)")+
+        theme_classic()+
+        theme(legend.position = "bottom",
+              text=element_text(size=16),
+              legend.key.width = unit(2, 'cm'))+
+    facet_wrap(~type)
+
+  print(p)
+  dev.off()
+
+
+  scaling_factor <- 2
+  png(file.path(myPath$figuresPath,paste0('TS_model vs measurements_',idxAnimal,'_200khz.png')),
+      width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
+
+  idxFreq <- '200khz'
+  idxRamping  <- 'fast'
+  flagFirstTemp <- TRUE
+  for(idxAngle in uniqueAngles){
+    metrics.model.filt <- subset(metrics.model.alt,angleMatch == idxAngle & freqChan == idxFreq & ramping == idxRamping)
+
+    if(dim(metrics.model.filt)[1] != 0){
+      mySpectra <- subset(TS.mat.all,freqChan == idxFreq & ramping == idxRamping & spectra_id.str == metrics.model.filt$idxBest)
+
+      if(flagFirstTemp){
+        spectra.plot <- mySpectra
+        flagFirstTemp <- FALSE
+      }else{
+        spectra.plot <- rbind(spectra.plot,mySpectra)
+      }
+    }
+  }
+
+  spectra.plot <- spectra.plot %>% select(c('frequency','angleMatch','TS'))
+  spectra.plot$type <- 'measurements'
+  KRMCurrent.plot <- KRMCurrent.filt[KRMCurrent.filt$frequency %in% freq.200khz,]
+  KRMCurrent.plot$angleMatch <- KRMCurrent.plot$theta
+  KRMCurrent.plot <- KRMCurrent.plot %>% select(c('frequency','angleMatch','TS'))
+  KRMCurrent.plot$type <- 'model'
+  spectra.plot <- rbind(spectra.plot,KRMCurrent.plot)
+
+  p <- ggplot(data=spectra.plot, aes(x=frequency/1e3, y=angleMatch, fill=TS))+
+    geom_tile()+
+    scale_fill_gradientn(colors=rev(pals::brewer.spectral(15)),
+                         limits=c(-60,-30), oob=scales::squish,
+                         name=expression(TS~"(dB re 1"*m^2*")"))+
+    scale_x_continuous(expand=c(0,0))+
+    scale_y_continuous(expand=c(0,0))+
+    ylab(expression(theta~"(°)"))+
+    xlab("Frequency (kHz)")+
+    theme_classic()+
+    theme(legend.position = "bottom",
+          text=element_text(size=16),
+          legend.key.width = unit(2, 'cm'))+
+  facet_wrap(~type)
+
+  print(p)
+  dev.off()
+
+
+  #####################################################
+  metrics.slow_fast$fish_id <- idxAnimal
+  metrics.model$fish_id     <- idxAnimal
+
+  # windows()
+  # ggplot()+
+  #  geom_line(data=metrics.slow_fast,aes(x=angleMatch,y=meanDistTrunc25,col=freqChan))
+  #
+  # windows()
+  # ggplot()+
+  #  geom_line(data=subset(metrics.model,!is.na(minDist)),aes(x=angleMatch,y=meanDist,col=freqChan))+
+  #  facet_wrap(~ramping)
+
+  if(flagFirstAnimal){
+    metrics.slow_fast.all <- metrics.slow_fast
+    metrics.model.all     <- metrics.model
+    flagFirstAnimal       <- FALSE
+  }else{
+    metrics.slow_fast.all <- rbind(metrics.slow_fast.all,metrics.slow_fast)
+    metrics.model.all     <- rbind(metrics.model.all,metrics.model)
+  }
+
   #windows()
   #ggplot(data=diff.fast_slow,aes(x=angleMatch))+
   #  geom_line(aes(y=quant50))+
   #  geom_ribbon(aes(ymin=quant10,ymax=quant90))+
   #  geom_line(aes(x=angleMatch,y=mean),col='red')
-  
+
   #ggplot(diff.fast_slow,aes(x=as.factor(angleMatch),y=diff.stats))+
   #  geom_boxplot(outlier.shape = NA)+
   #  coord_cartesian(ylim = quantile(diff.fast_slow$diff.stats, c(0.1, 0.9),na.rm=TRUE))
 }
 
-save(metrics.model.all,
-     diff.model.all,
-     metrics.fast_slow.all,
-     diff.fast_slow.all,
-     file = file.path(myPath$resultsPath,'acosize_TS_summary results.RData'))
-
-tabJoin <- subset(summaryTab,ramping == 'fast') %>% select(-c('ramping'))
-metrics.model.plot <- left_join(metrics.model.all,tabJoin,by='fish_id')
-
-metrics.fast_slow.plot <- left_join(metrics.fast_slow.all,tabJoin,by='fish_id')
-
-windows()
-ggplot(subset(metrics.model.plot,ramping == 'fast' & freqChan == 'all'),aes(x=as.factor(angleMatch),y=cor))+
-  geom_boxplot()+
-  ylim(0,10)
-
-windows()
-ggplot(subset(metrics.model.plot,ramping == 'slow' & freqChan == '70khz' & angleMatch == 80),aes(x=fish_length,y=mean))+
-  geom_point()
-
-windows()
-ggplot(subset(metrics.fast_slow.plot,freqChan == 'all' & fish_id == 'P03'),aes(x=angleMatch,y=cor))+
-  geom_line(data=subset(metrics.fast_slow.plot,freqChan == 'all' & fish_id == 'P03'),aes(x=angleMatch,y=cor),col='red')
-
-windows()
-ggplot()+
-  geom_line(data=subset(metrics.fast_slow.plot,freqChan == '70khz' & fish_id == 'S08'),aes(x=angleMatch,y=mean),col='blue')+
-  geom_line(data=subset(metrics.fast_slow.plot,freqChan == '70khz' & fish_id == 'P01'),aes(x=angleMatch,y=mean),col='red')+
-  geom_line(data=subset(metrics.fast_slow.plot,freqChan == '70khz' & fish_id == 'S27'),aes(x=angleMatch,y=mean),col='yellow')
-
-################################################################################
-## Dump - old
-################################################################################
-
-for(idx in 1:dim(summaryTab)[1]){
-  KRMCurrent <- read.csv(file.path(myPath$resultsPath,'KRM',
-                                   paste0('krm_',summaryTab$fish_id[idx],'.csv')))
-
-  measuName <- paste0(summaryTab$fish_id[idx],'_',
-                      summaryTab$mode[idx],'_',
-                      summaryTab$ramping[idx],'_',
-                      summaryTab$orientation[idx],'_',
-                      summaryTab$resolution[idx])
-  
-  #print(measuName)
-  
-  ###################################
-  # load 200khz results
-  ###################################
-  measuName.200khz  <- paste0(measuName,'_200khz')
-  TS.cor.200khz <- read.csv(file.path(myPath$resultsPath,'measurements','200khz',
-                                      paste0(measuName.200khz,'_TSCorr.csv')),check.names=FALSE)
-  TS.cor.200khz$angleMatch <- TS.cor.200khz$angle-270
-  TS.cor.200khz$angleMatch[TS.cor.200khz$angleMatch < 0] <- TS.cor.200khz$angleMatch[TS.cor.200khz$angleMatch < 0]+360
-  TS.cor.200khz$freqChan <- '200khz'
-  
-  TS.kde.200khz <- read.csv(file.path(myPath$resultsPath,'measurements','200khz',
-                                      paste0(measuName.200khz,'_TSkde.csv')),check.names=FALSE)
-  TS.kde.200khz <- TS.kde.200khz %>% pivot_longer(!angle & !TSmesh,names_to = "frequency", values_to = "density")
-  TS.kde.200khz$frequency <- as.numeric(TS.kde.200khz$frequency)
-  TS.kde.200khz$angleMatch <- TS.kde.200khz$angle-270
-  TS.kde.200khz$angleMatch[TS.kde.200khz$angleMatch < 0] <- TS.kde.200khz$angleMatch[TS.kde.200khz$angleMatch < 0]+360
-  TS.kde.200khz$freqChan <- '200khz'
-  
-  TS.stats.200khz <- read.csv(file.path(myPath$resultsPath,'measurements','200khz',
-                                        paste0(measuName.200khz,'_TSStats.csv')),check.names=FALSE)
-  TS.stats.200khz <- TS.stats.200khz %>% pivot_longer(!angle & !percentiles,names_to = "frequency", values_to = "TS")
-  TS.stats.200khz$frequency <- as.numeric(TS.stats.200khz$frequency)
-  TS.stats.200khz$angleMatch <- TS.stats.200khz$angle-270
-  TS.stats.200khz$angleMatch[TS.stats.200khz$angleMatch < 0] <- TS.stats.200khz$angleMatch[TS.stats.200khz$angleMatch < 0]+360
-  TS.stats.200khz$freqChan <- '200khz'
-  
-  ###################################
-  # load 70khz results
-  ###################################
-  measuName.70khz   <- paste0(measuName,'_70khz')
-  TS.cor.70khz <- read.csv(file.path(myPath$resultsPath,'measurements','70khz',
-                                     paste0(measuName.70khz,'_TSCorr.csv')),check.names=FALSE)
-  TS.cor.70khz$angleMatch <- TS.cor.70khz$angle-270
-  TS.cor.70khz$angleMatch[TS.cor.70khz$angleMatch < 0] <- TS.cor.70khz$angleMatch[TS.cor.70khz$angleMatch < 0]+360
-  TS.cor.70khz$freqChan <- '70khz'
-  
-  TS.kde.70khz <- read.csv(file.path(myPath$resultsPath,'measurements','70khz',
-                                     paste0(measuName.70khz,'_TSkde.csv')),check.names=FALSE)
-  TS.kde.70khz <- TS.kde.70khz %>% pivot_longer(!angle & !TSmesh,names_to = "frequency", values_to = "density")
-  TS.kde.70khz$frequency <- as.numeric(TS.kde.70khz$frequency)
-  TS.kde.70khz$angleMatch <- TS.kde.70khz$angle-270
-  TS.kde.70khz$angleMatch[TS.kde.70khz$angleMatch < 0] <- TS.kde.70khz$angleMatch[TS.kde.70khz$angleMatch < 0]+360
-  TS.kde.70khz$freqChan <- '70khz'
-  
-  TS.stats.70khz <- read.csv(file.path(myPath$resultsPath,'measurements','70khz',
-                                       paste0(measuName.70khz,'_TSStats.csv')),check.names=FALSE)
-  TS.stats.70khz <- TS.stats.70khz %>% pivot_longer(!angle & !percentiles,names_to = "frequency", values_to = "TS")
-  TS.stats.70khz$frequency <- as.numeric(TS.stats.70khz$frequency)
-  TS.stats.70khz$angleMatch <- TS.stats.70khz$angle-270
-  TS.stats.70khz$angleMatch[TS.stats.70khz$angleMatch < 0] <- TS.stats.70khz$angleMatch[TS.stats.70khz$angleMatch < 0]+360
-  TS.stats.70khz$freqChan <- '70khz'
-  
-  ###################################
-  # combine tables
-  ###################################
-  TS.cor.all <- rbind(TS.cor.70khz,TS.cor.200khz)
-  TS.stats.all <- rbind(TS.stats.70khz,TS.stats.200khz)
-  TS.kde.all <- rbind(TS.kde.70khz,TS.kde.200khz)
-  
-  uniqueAngles <- unique(TS.cor.all$angleMatch)
-  
-  ###################################
-  # plotting
-  ###################################
-  dir.create(file.path(myPath$figuresPath,measuName),showWarnings = FALSE)
-  
-  pdf(file.path(myPath$figuresPath,measuName,paste0(measuName,'TS correlation.pdf')))
-  
-  ggplot(TS.cor.all,aes(x=angleMatch,y=TSCorr,col=freqChan))+
-    geom_line()+
-    ggtitle('TS(f) correlation within angle bin')+
-    theme_bw()
-  
-  dev.off()
-  
-  # plotting against TS density
-  pdf(file.path(myPath$figuresPath,measuName,paste0(measuName,'TS kde.pdf')))
-  for(angleSelect in uniqueAngles){
-    plot.200khz <- subset(TS.kde.200khz,angleMatch == angleSelect)
-    plot.200khz$density[plot.200khz$density < 1e-2] <- NA
-    plot.200khz$density <-  plot.200khz$density/max(plot.200khz$density,na.rm=TRUE)
-    plot.70khz  <- subset(TS.kde.70khz,angleMatch == angleSelect)
-    plot.70khz$density[plot.70khz$density < 1e-2] <- NA
-    plot.70khz$density <-  plot.70khz$density/max(plot.70khz$density,na.rm=TRUE)
-    
-    if(angleSelect >= 65 & angleSelect <= 115){
-      plot.krm <- subset(KRMCurrent,theta == angleSelect)
-      
-      windows()
-      ggplot()+
-        geom_line(data=plot.krm,
-                  aes(x=frequency/1e3,y=TS),size=1,col='black')
-      
-      print(ggplot()+
-        geom_tile(data=plot.200khz,
-                  aes(x=frequency/1e3,y=TSmesh,fill=density))+
-        geom_tile(data=plot.70khz,
-                  aes(x=frequency/1e3,y=TSmesh,fill=density))+
-        geom_line(data=plot.krm,
-                  aes(x=frequency/1e3,y=TSmod),size=1,col='black')+
-        scale_fill_viridis_b()+
-        xlim(50,250)+
-        ylim(-70,-20)+
-        ggtitle(paste0(measuName,'<<-->> angle:',angleSelect))+
-        theme_bw())
-    }else{
-      print(ggplot()+
-        geom_tile(data=plot.200khz,
-                  aes(x=frequency/1e3,y=TSmesh,fill=density))+
-        geom_tile(data=plot.70khz,
-                  aes(x=frequency/1e3,y=TSmesh,fill=density))+
-        scale_fill_viridis_b()+
-        xlim(50,250)+
-        ylim(-70,-20)+
-        ggtitle(paste0(measuName,'<<-->> angle:',angleSelect))+
-        theme_bw())
-    }
-  }
-  dev.off()
-  
-  # plotting against TS density
-  pdf(file.path(myPath$figuresPath,measuName,paste0(measuName,'TS stats.pdf')))
-  for(angleSelect in uniqueAngles){
-    plot.all <- subset(TS.stats.all,angleMatch == angleSelect)
-    plot.all$percentiles <- as.character(plot.all$percentiles)
-    plot.all <- plot.all %>% pivot_wider(values_from=TS,names_from=percentiles)
-    
-    if(angleSelect >= 65 & angleSelect <= 115){
-      plot.krm <- subset(KRMCurrent,theta == angleSelect)
-      
-      print(ggplot()+
-        geom_ribbon(data=plot.all,
-                    aes(x=frequency/1e3,ymin=`25`,ymax=`75`,fill=freqChan))+
-        geom_line(data=plot.krm,
-                  aes(x=frequency/1e3,y=TS),size=1,col='black')+
-        ggtitle(paste0(measuName,'<<-->> angle:',angleSelect))+
-        xlim(50,250)+
-        ylim(-70,-20)+
-        theme_bw())
-    }else{
-      print(ggplot()+
-        geom_ribbon(data=plot.all,
-                    aes(x=frequency/1e3,ymin=`25`,ymax=`75`,fill=freqChan))+
-        ggtitle(paste0(measuName,'<<-->> angle:',angleSelect))+
-        xlim(50,250)+
-        ylim(-70,-20)+
-        theme_bw())
-    }
-  }
-  dev.off()
-}
+save(metrics.slow_fast.all,
+     metrics.model.all,
+     file = file.path(myPath$resultsPath,paste0('acosize_TS_summary results_',
+                                                windowing, '_',
+                                                distanceMeasure,'.RData')))

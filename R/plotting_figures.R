@@ -26,6 +26,27 @@ windowing <- 'variableWindow' # variableWindow fixedWindow
 dir.create(file.path(myPath$figuresPath,paste0(windowing,'_',distanceMeasure)),showWarnings = FALSE)
 myPath$figuresPath <- file.path(myPath$figuresPath,paste0(windowing,'_',distanceMeasure))
 
+
+mykde <- read.csv(file.path('C:/git/acosize_ts/results/measurements/200khz','M20_FM_fast_ventral_standardres_fixedWindow_200khz_TSkde.csv'),
+                  check.names=FALSE)
+
+mykde.temp <- mykde
+
+ggplot(mykde.temp,aes(x=angle,y=N_spectra))+
+  geom_line()
+
+mykde <- mykde %>% pivot_longer(!angle & !N_spectra & !TSmesh,values_to = 'kde',names_to = 'frequency')
+
+library(viridis)
+windows()
+ggplot(subset(mykde,angle == 223), aes(x = frequency, y = TSmesh, fill = kde)) +
+  geom_tile()+
+  scale_fill_viridis()+
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle('M20')
+
+dim(mykde)
+
 ################################################################################
 ## load objects
 ################################################################################
@@ -53,8 +74,8 @@ metrics.model.plot <- left_join(metrics.model.all,metrics.shape,by='fish_id')
 
 metrics.fast_slow.plot <- left_join(metrics.slow_fast.all,metrics.shape,by='fish_id')
 
-fast_slow.nspectra <- metrics.fast_slow.plot %>% 
-                      group_by(freqChan,angleMatch,fish_id,species) %>% 
+fast_slow.nspectra <- metrics.fast_slow.plot %>%
+                      group_by(freqChan,angleMatch,fish_id,species) %>%
                       summarize(fast=mean(n.fast,na.rm=TRUE),
                                 slow=mean(n.slow,na.rm=TRUE)) %>%
                       pivot_longer(!freqChan & !angleMatch & !fish_id & !species,names_to = 'ramping',values_to = 'N')
@@ -84,7 +105,7 @@ metrics.model.plot$lengthCat <- cut(metrics.model.plot$length, breaks=seq(from=2
 myPath$figuresPath <- file.path(myPath$figuresPath,'WGFAST')
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'TS_model vs measurements_70khz.png'), 
+png(file.path(myPath$figuresPath,'TS_model vs measurements_70khz.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p1 <- ggplot(subset(metrics.model.plot,freqChan != 'all' & freqChan == '70khz'),aes(x=as.factor(angleMatch),y=meanTS.model,fill=species))+
@@ -119,7 +140,7 @@ print(p.70khz)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'TS_model vs measurements_200khz.png'), 
+png(file.path(myPath$figuresPath,'TS_model vs measurements_200khz.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p1 <- ggplot(subset(metrics.model.plot,freqChan != 'all' & freqChan == '200khz'),aes(x=as.factor(angleMatch),y=meanTS.model,fill=species))+
@@ -155,7 +176,7 @@ dev.off()
 
 # N spectra
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'n spectra angle bins.png'), 
+png(file.path(myPath$figuresPath,'n spectra angle bins.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(data=subset(fast_slow.nspectra,freqChan != 'all'),aes(x=as.factor(angleMatch),y=N,fill=freqChan))+
@@ -173,7 +194,7 @@ print(p)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'n spectra angle bins_2.png'), 
+png(file.path(myPath$figuresPath,'n spectra angle bins_2.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(fast_slow.nspectra.red,aes(x=angleMatch,y=N,col=freqChan))+
@@ -190,7 +211,7 @@ dev.off()
 
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'slow fast minDist.png'), 
+png(file.path(myPath$figuresPath,'slow fast minDist.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.fast_slow.plot,freqChan != 'all'),aes(x=as.factor(angleMatch),y=minDist))+
@@ -206,7 +227,7 @@ dev.off()
 
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs measurements minDist.png'), 
+png(file.path(myPath$figuresPath,'model vs measurements minDist.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.model.plot,freqChan != 'all'),aes(x=as.factor(angleMatch),y=minDist,fill=ramping))+
@@ -225,7 +246,7 @@ dev.off()
 
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs measurements minDist_length species.png'), 
+png(file.path(myPath$figuresPath,'model vs measurements minDist_length species.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.model.plot,freqChan != 'all'),aes(x=as.factor(lengthCat),y=minDist,fill=species))+
@@ -241,7 +262,7 @@ dev.off()
 
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs measurements TS(L) 89-91.png'), 
+png(file.path(myPath$figuresPath,'model vs measurements TS(L) 89-91.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 temp.plot <- subset(metrics.model.plot,freqChan != 'all' & angleMatch >= 89 & angleMatch <= 91)
@@ -269,7 +290,7 @@ dev.off()
 
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs measurements TS(L) 63-65.png'), 
+png(file.path(myPath$figuresPath,'model vs measurements TS(L) 63-65.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 temp.plot <- subset(metrics.model.plot,freqChan != 'all' & angleMatch >= 63 & angleMatch <= 65)
@@ -349,7 +370,7 @@ grid.arrange(p1, p2, ncol = 1)
 # number of spectra
 ############################
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'n spectra angle bins_fast.png'), 
+png(file.path(myPath$figuresPath,'n spectra angle bins_fast.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(data=subset(fast_slow.nspectra,!is.na(n.fast) & freqChan != '70khz'),aes(x=as.factor(angleMatch),y=n.fast))+
@@ -369,7 +390,7 @@ dev.off()
 
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'n spectra angle bins_slow.png'), 
+png(file.path(myPath$figuresPath,'n spectra angle bins_slow.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(data=subset(fast_slow.nspectra,!is.na(n.fast) & freqChan != '70khz'),aes(x=as.factor(angleMatch),y=n.slow))+
@@ -407,7 +428,7 @@ dev.off()
 # histogram of fish length
 ############################
 scaling_factor <- 1
-png(file.path(myPath$figuresPath,'fish length histogram.png'), 
+png(file.path(myPath$figuresPath,'fish length histogram.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(summaryTab,ramping == 'slow'),aes(x=fish_length,fill=type))+
@@ -454,7 +475,7 @@ ggplot(temp.plot,aes(x=length,y=meanTS.mes,col=species))+#,col=ramping
 # consistency slow/fast ramping
 ############################
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'slow fast minDist.png'), 
+png(file.path(myPath$figuresPath,'slow fast minDist.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.fast_slow.plot,freqChan != 'all'),aes(x=as.factor(angleMatch),y=meanDistTrunc25))+
@@ -467,7 +488,7 @@ print(p)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'slow fast sd.png'), 
+png(file.path(myPath$figuresPath,'slow fast sd.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.fast_slow.plot,freqChan != 'all'),aes(x=as.factor(angleMatch),y=sdDist))+
@@ -494,7 +515,7 @@ print(p)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'slow fast min_fish length.png'), 
+png(file.path(myPath$figuresPath,'slow fast min_fish length.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.fast_slow.plot,freqChan != 'all'),aes(x=as.factor(fish_length),y=minDist,fill=type))+
@@ -510,7 +531,7 @@ dev.off()
 # model match
 ###################################
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs fast meanDistTrunc25.png'), 
+png(file.path(myPath$figuresPath,'model vs fast meanDistTrunc25.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.model.plot,freqChan != 'all'),aes(x=as.factor(angleMatch),y=meanDistTrunc25,fill=ramping))+
@@ -523,7 +544,7 @@ print(p)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs fast mean.png'), 
+png(file.path(myPath$figuresPath,'model vs fast mean.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.model.plot,freqChan != 'all'),aes(x=as.factor(angleMatch),y=mean,fill=ramping))+
@@ -536,7 +557,7 @@ print(p)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs fast minDist.png'), 
+png(file.path(myPath$figuresPath,'model vs fast minDist.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.model.plot,freqChan != 'all'),aes(x=as.factor(angleMatch),y=minDist,fill=ramping))+
@@ -549,7 +570,7 @@ print(p)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs fast sd.png'), 
+png(file.path(myPath$figuresPath,'model vs fast sd.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.model.plot,freqChan != 'all'),aes(x=as.factor(angleMatch),y=sdDist,fill=ramping))+
@@ -562,7 +583,7 @@ print(p)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs fast meanDistTrunc25_fish length.png'), 
+png(file.path(myPath$figuresPath,'model vs fast meanDistTrunc25_fish length.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.model.plot,freqChan != 'all'),aes(x=as.factor(fish_length),y=meanDistTrunc25,fill=ramping))+
@@ -575,7 +596,7 @@ print(p)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'model vs fast sd_fish length.png'), 
+png(file.path(myPath$figuresPath,'model vs fast sd_fish length.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.model.plot,freqChan != 'all'),aes(x=as.factor(fish_length),y=sdDist,fill=ramping))+
@@ -588,7 +609,7 @@ print(p)
 dev.off()
 
 scaling_factor <- 2
-png(file.path(myPath$figuresPath,'slow fast minDist.png'), 
+png(file.path(myPath$figuresPath,'slow fast minDist.png'),
     width = 12*scaling_factor, height = 8*scaling_factor, units = "cm", res = 300, pointsize = 10)
 
 p <- ggplot(subset(metrics.fast_slow.plot,freqChan != 'all'),aes(x=as.factor(angleMatch),y=minDist))+
